@@ -5,7 +5,10 @@
     <title>Title</title>
 </head>
 <body>
+    {% extends "base.html" %}
+    {% block content %}
     <h1>Добро пожаловать!</h1>
     <p>Вы успешно зарегистрировались! Для входа в систему перейдите по <a href="{% url 'users:login' %}">ссылке</a></p>
+    {% endblock %}
 </body>
 </html>
