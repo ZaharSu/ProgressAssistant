@@ -8,8 +8,13 @@
     {% extends "base.html" %}
     {% block content %}
     <h1>Профиль</h1>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
+        {% if user.photo %}
+        <p><img src="{{ user.photo.url }}" width="20%"></p>
+        {% else %}
+        <p><img src="{{ default_image }}" width="20%"></p>
+        {% endif %}
         <div class="form-error">{{ form.non_field_errors }}</div>
         {% for f in form %}
         <p><label class="form-label" for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}</p>
