@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'users.apps.UsersConfig'
+    'users.apps.UsersConfig',
+    'habits.apps.HabitsConfig'
 ]
 
 MIDDLEWARE = [
@@ -127,8 +128,8 @@ MEDIA_URL = '/media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'home'
+LOGIN_REDIRECT_URL = 'habits:habits_view'
+LOGOUT_REDIRECT_URL = 'users:login'
 LOGIN_URL = 'users:login'
 
 
