@@ -7,7 +7,26 @@
 <body>
     {% extends 'base.html' %}
     {% block content %}
-    <h1>Список привычек</h1>
+    <h1>Мои привычки</h1>
+    {% if habits%}
+        <table>
+            <tr>
+                <td>Привычка</td>
+                <td>Дата начала</td>
+            </tr>
+            {% for habit in habits %}
+            <tr>
+                <td>{{ habit.title }}</td>
+                <td>{{ habit.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    <p><a href="{% url 'habits:habit_add' %}">Добавить привычку</a></p>
+    {% else %}
+        <h3>У вас нет привычек</h3>
+        <p><a href="{% url 'habits:habit_add' %}">Добавить привычку</a></p>
+    {% endif %}
+
     {% endblock %}
 </body>
 </html>

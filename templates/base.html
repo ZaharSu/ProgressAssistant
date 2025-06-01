@@ -10,18 +10,25 @@
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav mr-auto">
+        {% if user.is_authenticated %}
         <li class="last">
+          {{ user.username }} |
           <form method="post" action="{% url 'users:logout' %}">
           {% csrf_token %}
           <button type="submit">Выйти</button>
           </form>
         </li>
+        {% else %}
+        <li class="last">
+          <a href="{% url 'users:login' %}">Войти</a> | <a href="{% url 'users:register' %}">Регистрация</a>
+        </li>
+        {% endif %}
       </ul>
     </div>
   </nav>
-    {% block content %}
+  {% block content %}
 
-    {% endblock %}
+  {% endblock %}
 
 
 
