@@ -14,12 +14,14 @@ class Habits(models.Model):
     def __str__(self):
         return self.title
 
+    def streak(self):
+        return self.logs.count()
 
 class HabitsLog(models.Model):
     habit = models.ForeignKey(Habits, on_delete=models.CASCADE, related_name='logs')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField()
     is_completed = models.BooleanField(default=False)
-    note = models.TextField(blank=True)
 
     class Meta:
         unique_together = ('habit', 'date')
@@ -27,6 +29,11 @@ class HabitsLog(models.Model):
     def __str__(self):
         return f'{self.habit.title} - {self.date}'
 
+
+class HabitsNote(models.Model):
+    log = models.ForeignKey(HabitsLog, on_delete=models.CASCADE, related_name='notes')
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class WorkoutCategory(models.Model):

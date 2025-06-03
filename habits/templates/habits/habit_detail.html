@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+    .habit-log-container {
+        cursor: pointer;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        background-color: #f9f9f9;
+        transition: background-color 0.3s;
+    }
+
+    .habit-log-container:hover {
+        background-color: #e6f7e6;
+    }
+
+    .habit-log-container form {
+        display: none;
+    }
+    </style>
+</head>
+<body>
+    {% extends 'base.html' %}
+    {% block content %}
+    <h1>{{ habit.title }}</h1>
+    <p>{{ habit.description }}</p>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    <div class="habit-log-container" onclick="this.querySelector('form').submit();">
+        <h3>Вы соблюдаете привычку <strong>{{ log_count }}</strong> день</h3>
+        <p>Нажмите, чтобы отметить выполнение</p>
+        <p>Ваша цель: {{ habit.purpose }} дней</p>
+        <form action="{% url 'habits:habit_log_create' habit.id %}" method="post">
+            {% csrf_token %}
+            <button type="submit">Отметить выполнение</button>
+        </form>
+    </div>
+    <hr>
+    <h4>Добавить заметку:</h4>
+    <form method="post">
+        {% csrf_token %}
+        {{ note_form.as_p }}
+        <button type="submit" class="btn btn-primary">Добавить</button>
+    </form>
+    <hr>
+    <h5>Ваши заметки:</h5>
+    <div >
+    {% for note in notes %}
+        <p>{{ note.created_at }}</p>
+        <p>{{ note.text }}</p>
+    <hr>
+    {% endfor %}
+    </div>
+    {% endblock %}
+</body>
+</html>

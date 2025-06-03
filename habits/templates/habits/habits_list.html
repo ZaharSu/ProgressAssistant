@@ -8,19 +8,27 @@
     {% extends 'base.html' %}
     {% block content %}
     <h1>Мои привычки</h1>
+    <hr>
     {% if habits%}
-        <table>
-            <tr>
-                <td>Привычка</td>
-                <td>Дата начала</td>
-            </tr>
+        <table class="table table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <td scope="col">Привычка</td>
+                    <td scope="col">Серия</td>
+                    <td scope="col">Дата начала</td>
+                </tr>
+            </thead>
             {% for habit in habits %}
-            <tr>
-                <td>{{ habit.title }}</td>
-                <td>{{ habit.created_at }}</td>
-            </tr>
+            <tbody>
+                <tr onclick="window.location.href='{% url 'habits:habit_detail' habit.id %}';" style="cursor: pointer;">>
+                    <td>{{ habit.title }}</td>
+                    <td>День {{ habit.streak }}</td>
+                    <td>{{ habit.created_at }}</td>
+                </tr>
+            </tbody>
             {% endfor %}
         </table>
+    <hr>
     <p><a href="{% url 'habits:habit_add' %}">Добавить привычку</a></p>
     {% else %}
         <h3>У вас нет привычек</h3>
