@@ -14,7 +14,8 @@
         <p><label class="form-label" for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}</p>
         <div class="form-error">{{ f.errors }}</div>
         {% endfor %}
-        <p><button type="submit">Добавить привычку</button></p>
+        <p><button type="submit" name="submit_type" value="add">Добавить привычку</button></p>
+        <p><button type="submit" name="submit_type" value="add_and_log">Добавить и отметить привычку</button></p>
     </form>
     {% endblock %}
 </body>

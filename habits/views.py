@@ -1,16 +1,17 @@
+from django.db.models import Q
 from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views import View
-from django.views.generic import ListView, CreateView
-from .models import Habits, HabitsLog, HabitsNote
+from django.views.generic import ListView, CreateView, UpdateView
+from .models import Habits, HabitsLog, HabitsNote, Workout, WorkoutCategory
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
-from .forms import HabitAddForm, HabitLogForm, HabitNoteForm
+from .forms import HabitAddForm, HabitLogForm, HabitNoteForm, WorkoutAddForm
 
-@method_decorator(login_required, name='dispatch')
+
 class HabitsView(LoginRequiredMixin, ListView):
     model = Habits
     template_name = 'habits/habits_list.html'
@@ -29,7 +30,16 @@ class HabitAdd(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.user = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+
+        if self.request.POST.get('submit_type') == 'add_and_log':
+            HabitsLog.objects.create(user=self.request.user,
+                                     habit=self.object,
+                                     date=timezone.now().date())
+
+            return redirect('habits:habit_detail', pk=self.object.pk)
+
+        return response
 
 
 class HabitDetailView(LoginRequiredMixin, View):
@@ -70,6 +80,7 @@ class HabitDetailView(LoginRequiredMixin, View):
         return redirect('habits:habit_detail', pk=habit.pk)
 
 
+
 class HabitLogCreateView(View):
 
     def post(self, request, pk):
@@ -88,3 +99,77 @@ class HabitLogCreateView(View):
 
 
         return redirect('habits:habit_detail', pk=habit.pk)
+
+
+class HabitUpdateView(LoginRequiredMixin, UpdateView):
+    model = Habits
+    form_class = HabitAddForm
+    template_name = 'habits/habit_edit.html'
+
+    def get_queryset(self):
+        return Habits.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['habit'] = self.get_object()
+        return context
+
+
+class HabitDeleteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        habit = get_object_or_404(Habits, pk=pk, user=request.user)
+        habit.delete()
+        messages.success(request, 'Привычка успешно удалена!')
+        return redirect('habits:habits_view')
+
+
+class WorkoutView(LoginRequiredMixin, ListView):
+    model = Workout
+    template_name = 'workouts/workouts_list.html'
+    context_object_name = 'workouts'
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Workout.objects.filter(user=user)
+        category_id = self.request.GET.get('category')
+        if category_id:
+            queryset = queryset.filter(category__id=category_id)
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context['categories'] = WorkoutCategory.objects.filter(Q(user=user))
+        context['selected_category'] = self.request.GET.get('category')
+        return context
+
+class WorkoutAdd(LoginRequiredMixin, CreateView):
+    model = Workout
+    form_class = WorkoutAddForm
+    template_name = 'workouts/workout_add.html'
+    success_url = reverse_lazy('habits:workouts_view')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['categories'] = WorkoutCategory.objects.filter(Q(user__isnull=True))
+        return context
+
+    def form_valid(self, form):
+        category_name = form.cleaned_data['category_or_new']
+
+        category, created = WorkoutCategory.objects.get_or_create(title=category_name, user=self.request.user)
+
+        self.objects = form.save(commit=False)
+        self.objects.category = category
+        self.objects.user = self.request.user
+        self.objects.save()
+        return redirect(self.success_url)
+
+
+class WorkoutDetailView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        workout = get_object_or_404(Workout, pk=pk, user=request.user)
+        context = {
+            'workout': workout,
+        }
+        return render(request, 'workouts/workout_detail.html', context)

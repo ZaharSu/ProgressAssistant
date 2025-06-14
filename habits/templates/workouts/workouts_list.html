@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    {% extends 'base.html' %}
+    {% block content %}
+    <h1>Мои тренировки</h1>
+    <hr>
+    <div>
+    <strong>Категория:</strong>
+    <a href="{% url 'habits:workouts_view' %}" {% if not selected_category %}style="font-weight: bold;"{% endif %}>Все</a>
+    {% for category in categories %}
+        |
+        <a href="?category={{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}style="font-weight: bold;"{% endif %}>
+            {{ category.title }}
+        </a>
+    {% endfor %}
+    </div>
+    <hr>
+    {% if workouts%}
+        <table class="table table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <td scope="col">Тренировка</td>
+                    <td scope="col">Категория</td>
+                    <td scope="col">Дата начала</td>
+                </tr>
+            </thead>
+            {% for workout in workouts %}
+            <tbody>
+                <tr onclick="window.location.href='{% url 'habits:workout_detail' workout.id %}';" style="cursor: pointer;">>
+                    <td>{{ workout.title }}</td>
+                    <td>{{ workout.category }}</td>
+                    <td>{{ workout.created_at }}</td>
+                </tr>
+            </tbody>
+            {% endfor %}
+        </table>
+    <hr>
+    <p><a href="{% url 'habits:workout_add' %}">Добавить тренировку</a></p>
+    {% else %}
+        <h3>У вас нет тренировок</h3>
+        <p><a href="{% url 'habits:workout_add' %}">Добавить тренировку</a></p>
+    {% endif %}
+
+    {% endblock %}
+</body>
+</html>

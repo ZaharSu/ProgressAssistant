@@ -11,15 +11,21 @@
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav mr-auto">
         {% if user.is_authenticated %}
-        <li class="last">
-          {{ user.username }} |
+        <li class="nav-item active">
+          <a href="{% url 'habits:habits_view' %}">Привычки</a>
+        </li>
+        <li class="nav-item active">
+          <a href="{% url 'habits:workouts_view' %}">Тренировки</a>
+        </li>
+        <li class="nav-item active">
+          <a href="{% url 'users:profile' %}">{{ user.username }}</a>|
           <form method="post" action="{% url 'users:logout' %}">
           {% csrf_token %}
           <button type="submit">Выйти</button>
           </form>
         </li>
         {% else %}
-        <li class="last">
+        <li class="nav-item active">
           <a href="{% url 'users:login' %}">Войти</a> | <a href="{% url 'users:register' %}">Регистрация</a>
         </li>
         {% endif %}
