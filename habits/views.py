@@ -6,10 +6,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy, reverse
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView
-from .models import Habits, HabitsLog, HabitsNote, Workout, WorkoutCategory
+from .models import Habits, HabitsLog, HabitsNote, Workout, WorkoutCategory, WorkoutLog
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
-from .forms import HabitAddForm, HabitLogForm, HabitNoteForm, WorkoutAddForm
+from .forms import HabitAddForm, HabitLogForm, HabitNoteForm, WorkoutAddForm, WorkoutLogForm
 
 
 class HabitsView(LoginRequiredMixin, ListView):
@@ -114,6 +114,10 @@ class HabitUpdateView(LoginRequiredMixin, UpdateView):
         context['habit'] = self.get_object()
         return context
 
+    def get_success_url(self):
+        return reverse_lazy('habits:habit_detail', kwargs={'pk': self.object.pk})
+
+
 
 class HabitDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk):
@@ -139,9 +143,10 @@ class WorkoutView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        context['categories'] = WorkoutCategory.objects.filter(Q(user=user))
+        context['categories'] = WorkoutCategory.objects.filter(Q(user=user), workout__user=user).distinct()
         context['selected_category'] = self.request.GET.get('category')
         return context
+
 
 class WorkoutAdd(LoginRequiredMixin, CreateView):
     model = Workout
@@ -169,7 +174,67 @@ class WorkoutAdd(LoginRequiredMixin, CreateView):
 class WorkoutDetailView(LoginRequiredMixin, View):
     def get(self, request, pk):
         workout = get_object_or_404(Workout, pk=pk, user=request.user)
+        logs = WorkoutLog.objects.filter(workout=workout).order_by('-date')
+        form = WorkoutLogForm()
         context = {
             'workout': workout,
+            'logs': logs,
+            'form': form
         }
         return render(request, 'workouts/workout_detail.html', context)
+
+    def post(self, request, pk):
+        workout = get_object_or_404(Workout, pk=pk, user=request.user)
+        form = WorkoutLogForm(request.POST)
+        if form.is_valid():
+            log = form.save(commit=False)
+            log.user = request.user
+            log.workout = workout
+            if not log.date:
+                log.date = timezone.now().date()
+            log.save()
+            messages.success(request, 'Запись добавлена!')
+        else:
+            logs = WorkoutLog.objects.filter(workout=workout).order_by('-date')
+            context = {
+            'workout': workout,
+            'logs': logs,
+            'form': form
+            }
+            messages.warning(request, 'Ошибка при отметке выполнения. Возможно вы заполнили не все необходимые поля!')
+            return render(request, 'workouts/workout_detail.html', context)
+
+        return redirect('habits:workout_detail', pk=workout.pk)
+
+
+class WorkoutUpdateView(LoginRequiredMixin, UpdateView):
+    model = Workout
+    form_class = WorkoutAddForm
+    template_name = 'workouts/workout_edit.html'
+
+    def get_queryset(self):
+        return Workout.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['workout'] = self.get_object()
+        return context
+
+    def form_valid(self, form):
+        category_title = form.cleaned_data['category_or_new']
+        category, created = WorkoutCategory.objects.get_or_create(title=category_title, user=self.request.user)
+        form.instance.category = category
+        form.instance.user = self.request.user
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('habits:workout_detail', kwargs={'pk': self.object.pk})
+
+
+class WorkoutDeleteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        workout = get_object_or_404(Workout, pk=pk, user=request.user)
+        workout.delete()
+        messages.success(request, 'Тренировка успешно удалена!')
+        return redirect('habits:workouts_view')

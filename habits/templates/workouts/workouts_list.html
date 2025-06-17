@@ -9,6 +9,14 @@
     {% block content %}
     <h1>Мои тренировки</h1>
     <hr>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
     <div>
     <strong>Категория:</strong>
     <a href="{% url 'habits:workouts_view' %}" {% if not selected_category %}style="font-weight: bold;"{% endif %}>Все</a>

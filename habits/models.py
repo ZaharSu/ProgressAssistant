@@ -61,13 +61,10 @@ class Workout(models.Model):
 class WorkoutLog(models.Model):
     workout = models.ForeignKey(Workout, on_delete=models.CASCADE, related_name='logs')
     date = models.DateField()
-    duration_minutes = models.PositiveIntegerField(validators=[MinValueValidator(1)], blank=True)
-    sets = models.PositiveIntegerField(validators=[MinValueValidator(1)], blank=True)
-    reps_per_set = models.PositiveIntegerField(validators=[MinValueValidator(1)], blank=True)
-    note = models.TextField(blank=True)
-
-    class Meta:
-        unique_together = ('workout', 'date')
+    duration_minutes = models.PositiveIntegerField(validators=[MinValueValidator(1)], blank=True, null=True)
+    sets = models.PositiveIntegerField(validators=[MinValueValidator(1)], blank=True, null=True)
+    reps_per_set = models.PositiveIntegerField(validators=[MinValueValidator(1)], blank=True, null=True)
+    note = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f'{self.workout.title} - {self.date}'

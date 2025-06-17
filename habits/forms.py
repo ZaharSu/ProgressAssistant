@@ -1,5 +1,5 @@
 from django import forms
-from .models import Habits, HabitsLog, HabitsNote, Workout
+from .models import Habits, HabitsLog, HabitsNote, Workout, WorkoutLog
 
 
 class HabitAddForm(forms.ModelForm):
@@ -46,4 +46,21 @@ class WorkoutAddForm(forms.ModelForm):
         labels = {
             'title': 'Название',
             'description': 'Описание тренировки(необязательно)'
+        }
+
+
+class WorkoutLogForm(forms.ModelForm):
+    class Meta:
+        model = WorkoutLog
+        fields = ['date', 'duration_minutes', 'sets', 'reps_per_set','note']
+        labels = {
+            'date': 'Дата тренировки',
+            'duration_minutes': 'Длительность тренировки',
+            'sets': 'Количество подходов',
+            'reps_per_set': 'Количество повторений в подходе',
+            'note': 'Заметка'
+        }
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'note': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Добавить заметку...', 'class': 'form-control'})
         }
