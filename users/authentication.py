@@ -9,7 +9,7 @@ class EmailAuthBackend(BaseBackend):
             if user.check_password(password):
                 return user
             return None
-        except (user_model.DoesNotExist, user_model.MultipledObjectsReturned):
+        except (user_model.DoesNotExist, user_model.MultipleObjectsReturned):
             return None
 
     def get_user(self, user_id):

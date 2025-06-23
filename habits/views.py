@@ -145,6 +145,18 @@ class WorkoutView(LoginRequiredMixin, ListView):
         user = self.request.user
         context['categories'] = WorkoutCategory.objects.filter(Q(user=user), workout__user=user).distinct()
         context['selected_category'] = self.request.GET.get('category')
+        workouts = context['workouts']
+        workout_data = []
+        for workout in workouts:
+            logs = workout.logs.order_by('-date')
+            last_log = logs.first()
+            workout_data.append({
+                'workout': workout,
+                'total_logs': logs.count(),
+                'last_date': last_log.date if last_log else None,
+                'duration': last_log.duration_minutes if last_log else None,
+            })
+        context['workout_data'] = workout_data
         return context
 
 

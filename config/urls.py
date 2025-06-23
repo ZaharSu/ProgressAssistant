@@ -25,7 +25,8 @@ urlpatterns = [
     path('', lambda request:redirect('habits:habits_view')),
     path('admin/', admin.site.urls),
     path('users/', include('users.urls', namespace='users')),
-    path('habits/', include('habits.urls', namespace='habits'))
+    path('habits/', include('habits.urls', namespace='habits')),
+    path('accounts/', include('allauth.urls'))
 ]
 
 if settings.DEBUG:

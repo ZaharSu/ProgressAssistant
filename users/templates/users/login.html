@@ -6,6 +6,7 @@
 </head>
 <body>
     {% extends "base.html" %}
+    {% load socialaccount %}
     {% block content %}
     <h1>Авторизация</h1>
     <form method="post">
@@ -17,6 +18,10 @@
         {% endfor %}
         <p><button type="submit">Войти</button></p>
     </form>
+    <hr>
+    <a href="{% provider_login_url 'google' %}" class="btn btn-outline-danger w-100">
+    <i class="bi bi-google me-1"></i> Войти через Google</a>
+    <hr>
     <p><a href="{% url 'users:register' %}"><button type="button">Регистрация</button></a></p>
     <p><a href="{% url 'users:password_reset' %}"><button type="button">Забыли пароль?</button></a></p>
     {% endblock %}

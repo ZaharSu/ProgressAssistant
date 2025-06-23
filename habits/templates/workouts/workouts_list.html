@@ -33,16 +33,20 @@
             <thead class="thead-light">
                 <tr>
                     <td scope="col">Тренировка</td>
-                    <td scope="col">Категория</td>
                     <td scope="col">Дата начала</td>
+                    <td scope="col">Всего занятий</td>
+                    <td scope="col">Последняя тренировка</td>
+                    <td scope="col">Время последней тренировки</td>
                 </tr>
             </thead>
-            {% for workout in workouts %}
+            {% for item in workout_data %}
             <tbody>
-                <tr onclick="window.location.href='{% url 'habits:workout_detail' workout.id %}';" style="cursor: pointer;">>
-                    <td>{{ workout.title }}</td>
-                    <td>{{ workout.category }}</td>
-                    <td>{{ workout.created_at }}</td>
+                <tr onclick="window.location.href='{% url 'habits:workout_detail' item.workout.id %}';" style="cursor: pointer;">>
+                    <td>{{ item.workout.title }}</td>
+                    <td>{{ item.workout.created_at }}</td>
+                    <td>{{ item.total_logs|default:"-" }}</td>
+                    <td>{{ item.last_date|default:"-" }}</td>
+                    <td>{{ item.duration|default:"-" }}</td>
                 </tr>
             </tbody>
             {% endfor %}
