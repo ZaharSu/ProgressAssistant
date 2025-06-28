@@ -20,13 +20,15 @@ from django.urls import path, include
 from django.conf.urls.static import static
 from django.shortcuts import redirect
 
+from users.views import connect_telegram
 
 urlpatterns = [
     path('', lambda request:redirect('habits:habits_view')),
     path('admin/', admin.site.urls),
     path('users/', include('users.urls', namespace='users')),
     path('habits/', include('habits.urls', namespace='habits')),
-    path('accounts/', include('allauth.urls'))
+    path('accounts/', include('allauth.urls')),
+    path('telegram/connect/', connect_telegram, name='connect_telegram')
 ]
 
 if settings.DEBUG:

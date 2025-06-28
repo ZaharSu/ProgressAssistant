@@ -5,9 +5,12 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, UpdateView
-
+from .models import TelegramUser
 from config import settings
 from .forms import LoginUserForm, RegisterUserForm, ProfileUserForm, UserPasswordChangeForm
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 
 
 class LoginUser(LoginView):
@@ -41,3 +44,13 @@ class UserPasswordChange(PasswordChangeView):
     form_class = UserPasswordChangeForm
     success_url = reverse_lazy("users:password_change_done")
     template_name = "users/password_change_form.html"
+
+
+@login_required
+def connect_telegram(request):
+    token = request.GET.get('token')
+    tg_user = TelegramUser.objects.get(token=token)
+    tg_user.linked_user = request.user
+    tg_user.save()
+    messages.success(request, 'Аккаунт связан с Telegram!')
+    return redirect('users:profile')
