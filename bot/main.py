@@ -24,7 +24,7 @@ django.setup()
 
 from users.models import User
 from users.models import TelegramUser
-from habits.models import Habits, HabitsLog
+from habits.models import Habits, HabitsLog, Workout
 
 import logging
 
@@ -68,7 +68,6 @@ def get_user_habits(telegram_id):
     except TelegramUser.DoesNotExist:
         return None
 
-
 @sync_to_async
 def get_habit_by_id(habit_id):
     return Habits.objects.filter(id=habit_id).first()
@@ -80,6 +79,23 @@ def is_habit_log(habit):
 @sync_to_async
 def get_habits_log(habit):
     return HabitsLog.objects.filter(habit=habit).count()
+
+@sync_to_async
+def get_user_workouts(telegram_id):
+    try:
+        tg_user = TelegramUser.objects.select_related('linked_user').get(telegram_id=telegram_id)
+        user = tg_user.linked_user
+        if not user:
+            return None
+        return list(Workout.objects.filter(user=user))
+    except TelegramUser.DoesNotExist:
+        return None
+
+@sync_to_async
+def get_workout_by_id(workout_id):
+    return Workout.objects.filter(id=workout_id).first()
+
+
 
 @dp.message(CommandStart())
 async def welcome(message:Message):
@@ -122,7 +138,17 @@ async def habits_handler(message:Message):
 
 @dp.message(F.text == 'Мои тренировки')
 async def works_handler(message:Message):
-    await message.answer(f'Вот тренировки')
+    telegram_id = message.from_user.id
+    workouts = await get_user_workouts(telegram_id)
+    if not workouts:
+        await message.answer(f'У вас пока нет тренировок')
+        return
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=workout.title, callback_data=f'workout_{workout.id}')] for workout in
+                         workouts])
+
+    await message.answer(f'Вот ваши тренировки:', reply_markup=keyboard)
 
 
 @dp.callback_query(F.data.startswith('habit_'))
@@ -148,6 +174,30 @@ async def habit_detail(callback: CallbackQuery):
                 f'Цель: {habit.purpose} дней\n'
                 f'Вы соблюдаете привычку: 0 дней\n'
                 f'Сегодня привычка не отмечалась!')
+    await callback.message.answer(info, parse_mode='HTML')
+
+@dp.callback_query(F.data.startswith('workout_'))
+async def workout_detail(callback: CallbackQuery):
+    workout_id = callback.data.split('_')[1]
+    workout = await get_workout_by_id(workout_id)
+
+    if not workout:
+        await callback.message.answer('Не удалось найти привычку.')
+        return
+    # if is_log:
+    #     info = (f'<b>{habit.title}</b>\n'
+    #             f'{habit.description or 'Без описания.'}\n'
+    #             f'Цель: {habit.purpose} дней\n'
+    #             f'Вы соблюдаете привычку: {habit_log_count} день\n'
+    #             f'Эта привычка сегодня отмечалась!')
+    # else:
+    #     info = (f'<b>{habit.title}</b>\n'
+    #             f'{habit.description or 'Без описания.'}\n'
+    #             f'Цель: {habit.purpose} дней\n'
+    #             f'Вы соблюдаете привычку: 0 дней\n'
+    #             f'Сегодня привычка не отмечалась!')
+    info = (f'<b>{workout.title}</b>\n'
+            f'{workout.description or 'Без описания'}')
     await callback.message.answer(info, parse_mode='HTML')
 
 async def main():
