@@ -15,8 +15,9 @@ django.setup()
 
 
 main_keyboard = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text='Мои привычки')],
-              [KeyboardButton(text='Мои тренировки')]],
+    keyboard=[[KeyboardButton(text='Мои привычки'), KeyboardButton(text='Мои тренировки')],
+              [KeyboardButton(text='Добавить привычку'), KeyboardButton(text='Добавить тренировку')]
+    ],
     resize_keyboard=True
 )
 
