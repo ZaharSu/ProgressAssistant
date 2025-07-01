@@ -16,7 +16,7 @@ from keyboards import main_keyboard
 from dotenv import load_dotenv
 from uuid import uuid4
 from datetime import date
-from states import AddHabitStates
+from states import AddHabitStates, AddWorkoutStates
 
 import django
 from config import settings
@@ -71,6 +71,18 @@ def create_habit(telegram_id, title, description, purpose):
         )
 
 @sync_to_async
+def create_workout(telegram_id, title, category_title, description):
+    tg_user = TelegramUser.objects.get(telegram_id=telegram_id)
+    category, created = WorkoutCategory.objects.get_or_create(user=tg_user.linked_user, title=category_title)
+    if tg_user.linked_user:
+        Workout.objects.create(
+            user=tg_user.linked_user,
+            title=title,
+            category=category,
+            description=description,
+        )
+
+@sync_to_async
 def get_user_habits(telegram_id):
     try:
         tg_user = TelegramUser.objects.select_related('linked_user').get(telegram_id=telegram_id)
@@ -92,6 +104,18 @@ def is_habit_log(habit):
 @sync_to_async
 def get_habits_log(habit):
     return HabitsLog.objects.filter(habit=habit).count()
+
+@sync_to_async
+def habit_create_log(telegram_id, habit_title):
+    tg_user = TelegramUser.objects.get(telegram_id=telegram_id)
+    habit = Habits.objects.get(user=tg_user.linked_user, title=habit_title)
+    if tg_user.linked_user:
+        HabitsLog.objects.create(
+            user=tg_user.linked_user,
+            habit=habit,
+            date = date.today(),
+            is_completed = True
+        )
 
 @sync_to_async
 def get_workout_category_by_id(telegram_id):
@@ -177,7 +201,37 @@ async def get_purpose(message: Message, state: FSMContext):
     telegram_id = message.from_user.id
 
     await create_habit(telegram_id, title, description, purpose)
-    await message.answer(f'Привычка добавлена <b>{title}</b> успешно добавлена!', parse_mode='HTML')
+    await message.answer(f'Привычка <b>{title}</b> успешно добавлена!', parse_mode='HTML')
+    await state.clear()
+
+@dp.message(F.text == 'Добавить тренировку')
+async def start_add_habit(message:Message, state: FSMContext):
+    await message.answer('Введите название тренировки:')
+    await state.set_state(AddWorkoutStates.title)
+
+@dp.message(AddWorkoutStates.title)
+async def get_title(message: Message, state: FSMContext):
+    await state.update_data(title=message.text)
+    await message.answer('Введите название категории:')
+    await state.set_state(AddWorkoutStates.category)
+
+@dp.message(AddWorkoutStates.category)
+async def get_description(message: Message, state: FSMContext):
+    await state.update_data(category=message.text)
+    await message.answer('Введите описание тренировки (или введите "-" если не нужно):')
+    await state.set_state(AddWorkoutStates.description)
+
+@dp.message(AddWorkoutStates.description)
+async def get_description(message: Message, state: FSMContext):
+    data = await state.get_data()
+    title = data.get('title')
+    category = data.get('category')
+    description = message.text if message.text != '-' else ''
+
+    telegram_id = message.from_user.id
+
+    await create_workout(telegram_id, title, category, description)
+    await message.answer(f'Тренировка <b>{title}</b> успешно добавлена!', parse_mode='HTML')
     await state.clear()
 
 @dp.message(F.text == 'Мои привычки')
@@ -216,7 +270,6 @@ async def habit_detail(callback: CallbackQuery):
     is_log = await is_habit_log(habit)
     habit_log_count = await get_habits_log(habit)
 
-
     if not habit:
         await callback.message.answer('Не удалось найти привычку.')
         return
@@ -226,13 +279,26 @@ async def habit_detail(callback: CallbackQuery):
                 f'Цель: {habit.purpose} дней\n'
                 f'Вы соблюдаете привычку: {habit_log_count} день\n'
                 f'Эта привычка сегодня отмечалась!')
+        await callback.message.answer(info, parse_mode='HTML')
     else:
         info = (f'<b>{habit.title}</b>\n'
                 f'{habit.description or 'Без описания.'}\n'
                 f'Цель: {habit.purpose} дней\n'
                 f'Вы соблюдаете привычку: 0 дней\n'
                 f'Сегодня привычка не отмечалась!')
-    await callback.message.answer(info, parse_mode='HTML')
+        log_keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[InlineKeyboardButton(text='Отметить привычку', callback_data=f'log_habit_{habit.title}')]]
+        )
+        await callback.message.answer(info, parse_mode='HTML', reply_markup=log_keyboard)
+
+@dp.callback_query(F.data.startswith('log_habit_'))
+async def habit_log(callback: CallbackQuery):
+    habit_title = callback.data.split('_')[-1]
+    try:
+        await habit_create_log(callback.from_user.id, habit_title)
+        await callback.message.answer('Привычка отмечена!')
+    except django.db.utils.IntegrityError:
+        await callback.message.answer('Сегодня привычка отмечалась!')
 
 @dp.callback_query(F.data.startswith('workout_category_'))
 async def workout_category(callback: CallbackQuery):
@@ -268,11 +334,15 @@ async def workout_category(callback: CallbackQuery):
                 f'Время последней тренировки: {workout_log.duration_minutes or '-'} минут\n'
                 f'Количество подходов: {workout_log.sets or '-'}\n'
                 f'Количество повторений: {workout_log.reps_per_set or '-'}\n'
-                f'С {workout.created_at} у вас было {workout_log_count} тренировок\n'
+                f'С {workout.created_at.strftime('%d.%m.%Y')} у вас было {workout_log_count} тренировок\n'
                 f'Сегодня у вас было {workout_log_count_today} тренировок!')
+        log_keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[InlineKeyboardButton(text='Отметить тренировку', callback_data=f'log_habit_{workout.title}')]]
+        )
+        await callback.message.answer(info, parse_mode='HTML', reply_markup=log_keyboard)
     else:
         info = (f'У вас еще не было занятий по этой тренировке')
-    await callback.message.answer(info, parse_mode='HTML')
+        await callback.message.answer(info, parse_mode='HTML')
 
 async def main():
     await dp.start_polling(bot)
