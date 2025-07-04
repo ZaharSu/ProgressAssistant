@@ -18,7 +18,7 @@
           <a href="{% url 'habits:workouts_view' %}">Тренировки</a>
         </li>
         <li class="nav-item active">
-          <a href="{% url 'users:profile' %}">{{ user.username }}</a>|
+          <a href="{% url 'users:profile' %}">{{ user.first_name }}</a>|
           <form method="post" action="{% url 'users:logout' %}">
           {% csrf_token %}
           <button type="submit">Выйти</button>

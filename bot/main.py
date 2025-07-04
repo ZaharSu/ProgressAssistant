@@ -16,7 +16,10 @@ from keyboards import main_keyboard
 from dotenv import load_dotenv
 from uuid import uuid4
 from datetime import date
-from states import AddHabitStates, AddWorkoutStates
+from states import AddHabitStates, AddWorkoutStates, LogWorkoutStates
+from sheduler import send_habit_reminders, send_workout_reminders
+from  apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 
 import django
 from config import settings
@@ -152,6 +155,19 @@ def get_workout_log_count(workout):
 def get_workout_log_count_today(workout):
     return WorkoutLog.objects.filter(workout=workout, date=date.today()).count()
 
+@sync_to_async
+def create_log_workout(telegram_id, workout_title, duration_minutes, sets, reps_per_set):
+    tg_user = TelegramUser.objects.get(telegram_id=telegram_id)
+    workout = Workout.objects.get(user=tg_user.linked_user, title=workout_title)
+    if tg_user.linked_user:
+        WorkoutLog.objects.create(
+            workout = workout,
+            date = date.today(),
+            duration_minutes = duration_minutes,
+            sets = sets,
+            reps_per_set = reps_per_set
+        )
+
 @dp.message(CommandStart())
 async def welcome(message:Message):
     telegram_id = message.from_user.id
@@ -193,19 +209,22 @@ async def get_description(message: Message, state: FSMContext):
 
 @dp.message(AddHabitStates.purpose)
 async def get_purpose(message: Message, state: FSMContext):
-    data = await state.get_data()
-    title = data.get('title')
-    description = data.get('description') if data.get('description') != '-' else ''
-    purpose = int(message.text)
+    try:
+        data = await state.get_data()
+        title = data.get('title')
+        description = data.get('description') if data.get('description') != '-' else ''
+        purpose = int(message.text)
 
-    telegram_id = message.from_user.id
+        telegram_id = message.from_user.id
 
-    await create_habit(telegram_id, title, description, purpose)
-    await message.answer(f'Привычка <b>{title}</b> успешно добавлена!', parse_mode='HTML')
-    await state.clear()
+        await create_habit(telegram_id, title, description, purpose)
+        await message.answer(f'Привычка <b>{title}</b> успешно добавлена!', parse_mode='HTML')
+        await state.clear()
+    except ValueError:
+        await message.answer('Проверьте правильность введенных данных!')
 
 @dp.message(F.text == 'Добавить тренировку')
-async def start_add_habit(message:Message, state: FSMContext):
+async def start_add_workout(message:Message, state: FSMContext):
     await message.answer('Введите название тренировки:')
     await state.set_state(AddWorkoutStates.title)
 
@@ -216,7 +235,7 @@ async def get_title(message: Message, state: FSMContext):
     await state.set_state(AddWorkoutStates.category)
 
 @dp.message(AddWorkoutStates.category)
-async def get_description(message: Message, state: FSMContext):
+async def get_category(message: Message, state: FSMContext):
     await state.update_data(category=message.text)
     await message.answer('Введите описание тренировки (или введите "-" если не нужно):')
     await state.set_state(AddWorkoutStates.description)
@@ -284,7 +303,7 @@ async def habit_detail(callback: CallbackQuery):
         info = (f'<b>{habit.title}</b>\n'
                 f'{habit.description or 'Без описания.'}\n'
                 f'Цель: {habit.purpose} дней\n'
-                f'Вы соблюдаете привычку: 0 дней\n'
+                f'Вы соблюдаете привычку: {habit_log_count} день\n'
                 f'Сегодня привычка не отмечалась!')
         log_keyboard = InlineKeyboardMarkup(
             inline_keyboard=[[InlineKeyboardButton(text='Отметить привычку', callback_data=f'log_habit_{habit.title}')]]
@@ -306,7 +325,7 @@ async def workout_category(callback: CallbackQuery):
     workouts = await get_workout_by_category_id(callback.from_user.id, category_id)
 
     if not workouts:
-        await callback.message.answer('Не удалось найти тренировки.')
+        await callback.message.answer('Не удалось найти тренировки!')
         return
 
     keyboard = InlineKeyboardMarkup(
@@ -325,8 +344,13 @@ async def workout_category(callback: CallbackQuery):
     workout_log_count_today = await get_workout_log_count_today(workout)
 
     if not workout:
-        await callback.message.answer('Не удалось найти тренировку.')
+        await callback.message.answer('Не удалось найти тренировку!')
         return
+
+    log_keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text='Отметить тренировку', callback_data=f'log_workout_{workout.title}')]]
+    )
 
     if workout_log:
         info = (f'<b>{workout.title}</b>\n'
@@ -336,15 +360,52 @@ async def workout_category(callback: CallbackQuery):
                 f'Количество повторений: {workout_log.reps_per_set or '-'}\n'
                 f'С {workout.created_at.strftime('%d.%m.%Y')} у вас было {workout_log_count} тренировок\n'
                 f'Сегодня у вас было {workout_log_count_today} тренировок!')
-        log_keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[[InlineKeyboardButton(text='Отметить тренировку', callback_data=f'log_habit_{workout.title}')]]
-        )
         await callback.message.answer(info, parse_mode='HTML', reply_markup=log_keyboard)
     else:
         info = (f'У вас еще не было занятий по этой тренировке')
-        await callback.message.answer(info, parse_mode='HTML')
+        await callback.message.answer(info, parse_mode='HTML', reply_markup=log_keyboard)
+
+@dp.callback_query(F.data.startswith('log_workout_'))
+async def start_log_workout(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(workout_title=callback.data.split('_')[-1])
+    await callback.message.answer('Введите время тренировки (минут):')
+    await state.set_state(LogWorkoutStates.duration_minutes)
+
+@dp.message(LogWorkoutStates.duration_minutes)
+async def get_log_duration_minutes(message: Message, state: FSMContext):
+    await state.update_data(duration_minutes=message.text)
+    await message.answer('Введите количество подходов (или введите "-" если не нужно):')
+    await state.set_state(LogWorkoutStates.sets)
+
+@dp.message(LogWorkoutStates.sets)
+async def get_log_sets(message: Message, state: FSMContext):
+    await state.update_data(sets=message.text)
+    await message.answer('Введите количество повторений в подходе (или введите "-" если не нужно):')
+    await state.set_state(LogWorkoutStates.reps_per_set)
+
+@dp.message(LogWorkoutStates.reps_per_set)
+async def get_log_sets(message: Message, state: FSMContext):
+    try:
+        data = await state.get_data()
+        workout_title = data.get('workout_title')
+        duration_minutes = data.get('duration_minutes') if data.get('duration_minutes') != '-' else ''
+        sets = data.get('sets') if data.get('sets') != '-' else ''
+        reps_per_set = message.text if message.text != '-' else ''
+
+        telegram_id = message.from_user.id
+
+        await create_log_workout(telegram_id, workout_title, duration_minutes, sets, reps_per_set)
+        await message.answer(f'Выполнение тренировки отмечено!', parse_mode='HTML')
+        await state.clear()
+    except ValueError:
+        await message.answer('Проверьте правильность введенных данных!')
 
 async def main():
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(send_habit_reminders, 'cron', hour=18, minute=0, args=[bot])
+    scheduler.add_job(send_workout_reminders, 'cron', hour=18, minute=0, args=[bot])
+    scheduler.start()
+
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
