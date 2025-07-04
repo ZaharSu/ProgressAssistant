@@ -23,51 +23,81 @@
     </style>
 </head>
 <body>
-    {% extends 'base.html' %}
-    {% block content %}
-    <h1>{{ habit.title }}</h1>
-    <p>{{ habit.description }}</p>
-    {% if messages %}
+{% extends 'base.html' %}
+    {% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow border-0" style="background-color: #f6fff8;">
+    <div class="card-body">
+      <h2 class="text-success text-center">{{ habit.title }}</h2>
+      <p class="text-muted text-center">{{ habit.description }}</p>
+
+      {% if messages %}
         {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
+          </div>
         {% endfor %}
-    {% endif %}
-    <div class="habit-log-container" onclick="this.querySelector('form').submit();">
-        <h3>Вы соблюдаете привычку <strong>{{ log_count }}</strong> день</h3>
-        <p>Нажмите, чтобы отметить выполнение</p>
-        <p>Ваша цель: {{ habit.purpose }} дней</p>
+      {% endif %}
+
+      <div class="p-4 mb-4 border rounded text-center" style="cursor: pointer; background-color: #eafaf1;"
+           onclick="this.querySelector('form').submit();">
+        <h4>Вы соблюдаете привычку <strong class="text-success">{{ log_count }}</strong> день(дней)</h4>
+        <p class="mb-1">Нажмите, чтобы отметить выполнение</p>
+        <p class="text-muted">Цель: {{ habit.purpose }} дней</p>
         <form action="{% url 'habits:habit_log_create' habit.id %}" method="post">
-            {% csrf_token %}
-            <button type="submit">Отметить выполнение</button>
+          {% csrf_token %}
+          <button type="submit" class="d-none"></button>
         </form>
-    </div>
-    <hr>
-    <p>
-        <a href="{% url 'habits:habit_edit' habit.id %}" class="btn btn-primary">Редактировать</a>
-    </p>
-    <form action="{% url 'habits:habit_delete' habit.id %}" method="post" onsubmit="return confirm('Вы уверены, что хотите удалить эту привычку?');" style="display:inline;">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger">Удалить</button>
-    </form>
-    <hr>
-    <h4>Добавить заметку:</h4>
-    <form method="post">
+      </div>
+
+      <div class="d-flex justify-content-between">
+        <a href="{% url 'habits:habit_edit' habit.id %}" class="btn btn-success me-2">Редактировать</a>
+
+        <form action="{% url 'habits:habit_delete' habit.id %}" method="post"
+              onsubmit="return confirm('Вы уверены, что хотите удалить эту привычку?');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Удалить</button>
+        </form>
+      </div>
+
+      <hr>
+
+      <h5 class="mt-4">Добавить заметку</h5>
+      <form method="post" class="mt-2">
         {% csrf_token %}
-        {{ note_form.as_p }}
-        <button type="submit" class="btn btn-primary">Добавить</button>
-    </form>
-    <hr>
-    <h5>Ваши заметки:</h5>
-    <div >
-    {% for note in notes %}
-        <p>{{ note.created_at }}</p>
-        <p>{{ note.text }}</p>
-    <hr>
-    {% endfor %}
+        <div class="mb-3">
+          {{ note_form.text.label_tag }}
+          {{ note_form.text|add_class:"form-control" }}
+        </div>
+        <button type="submit" class="btn btn-success">Добавить</button>
+      </form>
+
+      {% if notes %}
+        <hr>
+        <h5 class="mt-4">Ваши заметки</h5>
+        {% for note in notes %}
+          <div class="border-bottom py-2">
+            <p class="text-muted mb-1">{{ note.created_at|date:"d.m.Y H:i" }}</p>
+            <p>{{ note.text }}</p>
+          </div>
+        {% endfor %}
+      {% endif %}
     </div>
-    {% endblock %}
+  </div>
+</div>
+<script>
+  setTimeout(function () {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+      alert.classList.remove('show');
+      alert.classList.add('fade');
+      setTimeout(() => alert.remove(), 500);
+    });
+  }, 3000);
+</script>
+{% endblock %}
+
 </body>
-</html>

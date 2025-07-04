@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'users.apps.UsersConfig',
-    'habits.apps.HabitsConfig'
+    'habits.apps.HabitsConfig',
+    'widget_tweaks'
 ]
 
 MIDDLEWARE = [

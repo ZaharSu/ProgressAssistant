@@ -3,46 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+
 </head>
 <body>
     {% extends 'base.html' %}
-    {% block content %}
-    <h1>Мои привычки</h1>
-    {% if messages %}
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow border-0" style="background-color: #f6fff8;">
+    <div class="card-body">
+      <h2 class="text-success text-center mb-4">Мои привычки</h2>
+
+      {% if messages %}
         {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
+          </div>
         {% endfor %}
-    {% endif %}
-    <hr>
-    {% if habits%}
-        <table class="table table-bordered">
-            <thead class="thead-light">
-                <tr>
-                    <td scope="col">Привычка</td>
-                    <td scope="col">Серия</td>
-                    <td scope="col">Дата начала</td>
-                </tr>
-            </thead>
-            {% for habit in habits %}
-            <tbody>
-                <tr onclick="window.location.href='{% url 'habits:habit_detail' habit.id %}';" style="cursor: pointer;">>
-                    <td>{{ habit.title }}</td>
-                    <td>День {{ habit.streak }}</td>
-                    <td>{{ habit.created_at }}</td>
-                </tr>
-            </tbody>
-            {% endfor %}
-        </table>
-    <hr>
-    <p><a href="{% url 'habits:habit_add' %}">Добавить привычку</a></p>
-    {% else %}
-        <h3>У вас нет привычек</h3>
-        <p><a href="{% url 'habits:habit_add' %}">Добавить привычку</a></p>
-    {% endif %}
+      {% endif %}
 
-    {% endblock %}
+      {% if habits %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-success">
+              <tr>
+                <th scope="col">Привычка</th>
+                <th scope="col">Серия</th>
+                <th scope="col">Дата начала</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for habit in habits %}
+              <tr onclick="window.location.href='{% url 'habits:habit_detail' habit.id %}';" style="cursor: pointer;">
+                <td>{{ habit.title }}</td>
+                <td>День {{ habit.streak }}</td>
+                <td>{{ habit.created_at|date:"d.m.Y" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="text-end">
+          <a href="{% url 'habits:habit_add' %}" class="btn btn-success mt-3">Добавить привычку</a>
+        </div>
+      {% else %}
+        <div class="text-center">
+          <h4 class="text-muted">У вас нет привычек</h4>
+          <a href="{% url 'habits:habit_add' %}" class="btn btn-success mt-3">Добавить привычку</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+    <script>
+  setTimeout(function () {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+      alert.classList.remove('show');
+      alert.classList.add('fade');
+      setTimeout(() => alert.remove(), 500);
+    });
+  }, 3000);
+</script>
+{% endblock %}
 </body>
 </html>

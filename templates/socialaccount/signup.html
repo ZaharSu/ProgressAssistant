@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация через Google</title>
+</head>
+<body>
+{% extends "base.html" %}
+{% load i18n %}
+{% load account %}
+
+{% block head_title %}
+    {% trans "Регистрация через Google" %}
+{% endblock head_title %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 50px auto; padding: 30px; border: 1px solid #ddd; border-radius: 10px; background-color: #f9f9f9;">
+    <h2 style="text-align: center; color: #333;">Завершите регистрацию</h2>
+    <p style="text-align: center; color: #666;">Пожалуйста, заполните недостающую информацию для завершения регистрации.</p>
+
+    <form method="post" action="{% url 'socialaccount_signup' %}" style="margin-top: 30px;">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div style="margin-bottom: 15px;">
+            {{ form.email.label_tag }}<br>
+            {{ form.email }}
+            {{ form.email.errors }}
+        </div>
+        <div style="margin-bottom: 15px;">
+            {{ form.username.label_tag }}<br>
+            {{ form.username }}
+            {{ form.username.errors }}
+        </div>
+
+        <div style="text-align: center;">
+            <button type="submit" style="padding: 10px 30px; font-size: 16px; background-color: #4285f4; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                {% trans "Зарегистрироваться" %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock content %}
+</body>
+</html>

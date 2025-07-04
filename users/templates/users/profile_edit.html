@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 600px;">
+  <h2 class="text-center mb-4 text-success">Редактирование профиля</h2>
+
+  <form method="post" enctype="multipart/form-data" class="p-4 border rounded shadow-sm bg-white">
+    {% csrf_token %}
+
+    <div class="text-center mb-4">
+      {% if user.photo %}
+        <img src="{{ user.photo.url }}" class="img-thumbnail" style="max-width: 150px;" alt="Фото профиля">
+      {% else %}
+        <img src="{{ default_image }}" class="img-thumbnail" style="max-width: 150px;" alt="Фото по умолчанию">
+      {% endif %}
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    {% for f in form %}
+      <div class="mb-3">
+        <label for="{{ f.id_for_label }}" class="form-label">{{ f.label }}</label>
+        {{ f }}
+        {% if f.errors %}
+          <div class="form-text text-danger">{{ f.errors }}</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <div class="d-grid">
+      <button type="submit" class="btn btn-success">Сохранить</button>
+    </div>
+  </form>
+
+  <div class="mt-4 text-center">
+    <hr>
+    <a href="{% url 'users:password_change' %}" class="btn btn-outline-secondary">Сменить пароль</a>
+  </div>
+</div>
+{% endblock %}

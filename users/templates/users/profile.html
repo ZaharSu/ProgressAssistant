@@ -1,31 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-    {% extends "base.html" %}
-    {% block content %}
-    <h1>Профиль</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {% if user.photo %}
-        <p><img src="{{ user.photo.url }}" width="20%"></p>
-        {% else %}
-        <p><img src="{{ default_image }}" width="20%"></p>
-        {% endif %}
-        <div class="form-error">{{ form.non_field_errors }}</div>
-        {% for f in form %}
-        <p><label class="form-label" for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}</p>
-        <div class="form-error">{{ f.errors }}</div>
-        {% endfor %}
-        <p><button type="submit">Сохранить</button></p>
-    </form>
-    <hr>
-    <a href="https://t.me/progress_assistant_bot" target="_blank">Подключить Telegram-бота</a>
-    <hr>
-    <p><a href="{% url 'users:password_change' %}">Сменить пароль</a></p>
-    {% endblock %}
-</body>
-</html>
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow border-0" style="max-width: 650px; margin: 0 auto; background-color: #f6fff8;">
+    <div class="card-body text-center">
+      <h2 class="card-title mb-4 text-success">Профиль пользователя</h2>
+
+      {% if user.photo %}
+        <img src="{{ user.photo.url }}" alt="Аватар" class="rounded-circle mb-3 shadow" width="120" height="120">
+      {% else %}
+        <img src="{{ default_image }}" alt="Аватар" class="rounded-circle mb-3 shadow" width="120" height="120">
+      {% endif %}
+
+      <h4 class="mb-1">{{ user.first_name }} {{ user.last_name }}</h4>
+      <p class="text-muted mb-2">{{ user.email }}</p>
+
+      {% if user.date_birth %}
+        <h6 class="mb-0 text-success">Дата рождения</h6>
+        <p class="text-muted mb-3">{{ user.date_birth|date:"d.m.Y" }}</p>
+      {% endif %}
+
+      <a href="{% url 'users:profile_edit' %}" class="btn btn-success mb-2 px-4">Изменить профиль</a><br>
+      <a href="https://t.me/progress_assistant_bot" target="_blank" class="btn btn-outline-success px-4 mb-2">Подключить Telegram-бота</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

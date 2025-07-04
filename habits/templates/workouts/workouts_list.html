@@ -1,63 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+  <meta charset="UTF-8">
+  <title>Мои тренировки</title>
+  <style>
+    .text-inactive {
+  color: #66BB6A !important;
+}
+  </style>
 </head>
 <body>
-    {% extends 'base.html' %}
-    {% block content %}
-    <h1>Мои тренировки</h1>
-    <hr>
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-    <div>
-    <strong>Категория:</strong>
-    <a href="{% url 'habits:workouts_view' %}" {% if not selected_category %}style="font-weight: bold;"{% endif %}>Все</a>
-    {% for category in categories %}
-        |
-        <a href="?category={{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}style="font-weight: bold;"{% endif %}>
-            {{ category.title }}
-        </a>
-    {% endfor %}
-    </div>
-    <hr>
-    {% if workouts%}
-        <table class="table table-bordered">
-            <thead class="thead-light">
-                <tr>
-                    <td scope="col">Тренировка</td>
-                    <td scope="col">Дата начала</td>
-                    <td scope="col">Всего занятий</td>
-                    <td scope="col">Последняя тренировка</td>
-                    <td scope="col">Время последней тренировки</td>
-                </tr>
-            </thead>
-            {% for item in workout_data %}
-            <tbody>
-                <tr onclick="window.location.href='{% url 'habits:workout_detail' item.workout.id %}';" style="cursor: pointer;">>
-                    <td>{{ item.workout.title }}</td>
-                    <td>{{ item.workout.created_at }}</td>
-                    <td>{{ item.total_logs|default:"-" }}</td>
-                    <td>{{ item.last_date|default:"-" }}</td>
-                    <td>{{ item.duration|default:"-" }}</td>
-                </tr>
-            </tbody>
-            {% endfor %}
-        </table>
-    <hr>
-    <p><a href="{% url 'habits:workout_add' %}">Добавить тренировку</a></p>
-    {% else %}
-        <h3>У вас нет тренировок</h3>
-        <p><a href="{% url 'habits:workout_add' %}">Добавить тренировку</a></p>
-    {% endif %}
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow border-0" style="background-color: #f6fff8;">
+    <div class="card-body">
+      <h2 class="text-success text-center mb-4">Мои тренировки</h2>
 
-    {% endblock %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="mb-3 text-center">
+        <strong>Категория:</strong>
+        <a href="{% url 'habits:workouts_view' %}"
+           class="mx-1 {% if not selected_category %}fw-bold text-success{% else %}text-inactive{% endif %}">
+          Все
+        </a>
+        {% for category in categories %}
+          |
+          <a href="?category={{ category.id }}"
+             class="mx-1 {% if selected_category == category.id|stringformat:'s' %}fw-bold text-success{% else %}text-inactive{% endif %}">
+            {{ category.title }}
+          </a>
+        {% endfor %}
+      </div>
+
+      {% if workouts %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-success">
+              <tr>
+                <th>Тренировка</th>
+                <th>Дата начала</th>
+                <th>Всего занятий</th>
+                <th>Последняя тренировка</th>
+                <th>Время последней тренировки</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in workout_data %}
+              <tr onclick="location.href='{% url 'habits:workout_detail' item.workout.id %}';" style="cursor: pointer;">
+                <td>{{ item.workout.title }}</td>
+                <td>{{ item.workout.created_at|date:"d.m.Y" }}</td>
+                <td>{{ item.total_logs|default:"-" }}</td>
+                <td>{{ item.last_date|date:"d.m.Y"|default:"-" }}</td>
+                <td>{{ item.duration|default:"-" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="text-end">
+          <a href="{% url 'habits:workout_add' %}" class="btn btn-success mt-3">Добавить тренировку</a>
+        </div>
+      {% else %}
+        <div class="text-center">
+          <h4 class="text-muted">У вас нет тренировок</h4>
+          <a href="{% url 'habits:workout_add' %}" class="btn btn-success mt-3">Добавить тренировку</a>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+<script>
+  setTimeout(() => {
+    document.querySelectorAll('.alert').forEach(alert => {
+      alert.classList.remove('show');
+      alert.classList.add('fade');
+      setTimeout(() => alert.remove(), 500);
+    });
+  }, 3000);
+</script>
+{% endblock %}
 </body>
 </html>
